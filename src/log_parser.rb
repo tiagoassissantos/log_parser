@@ -6,6 +6,7 @@ class LogParser
 
     result.each do |key, data|
       p '--------------------------------------------------------'
+      p data
       p "> Game: #{key.to_s}"
       p "- Total Kills: #{data[:total_kills]}"
       p "- Players:"
@@ -18,6 +19,10 @@ class LogParser
         p "  - #{killer}: #{quantity}"
       end
 
+      p '- Kills by means:'
+      data[:kills_by_means].each do |mean, quantity|
+        p "  - #{mean}: #{quantity}"
+      end
     end
   end
 
@@ -55,7 +60,8 @@ class LogParser
     data.merge( "game_#{index}": {
       "total_kills": 0,
       "players": [],
-      "kills": {}
+      "kills": {},
+      "kills_by_means": {}
     } )
   end
 
@@ -84,6 +90,8 @@ class LogParser
 
     result = sum_kills result, killer_player, index, 1
 
+    result["game_#{index}".to_sym][:kills_by_means] = process_kill_mean result["game_#{index}".to_sym][:kills_by_means], line
+
     return result
   end
 
@@ -94,14 +102,30 @@ class LogParser
       result["game_#{index}".to_sym][:kills][player] += value
     end
 
-    result["game_#{index}".to_sym][:kills] = sort_killers(result["game_#{index}".to_sym][:kills])
+    result["game_#{index}".to_sym][:kills] = sort_hash(result["game_#{index}".to_sym][:kills])
 
     return result
   end
 
-  def sort_killers(kills)
-    result = kills.sort_by { |k, v| v }.reverse.to_h
+  def sort_hash(hash)
+    result = hash.sort_by { |k, v| v }.reverse.to_h
     return result
+  end
+
+  def process_kill_mean(kills_means_hash, line)
+    kill_mean = line[/#{" by "}(.*?)#{Regexp.escape("\n")}/m, 1]
+
+    kills_means_hash = {} if kills_means_hash.nil?
+
+    if kills_means_hash[kill_mean.to_sym].nil?
+      kills_means_hash[kill_mean.to_sym] = 1
+    else
+      kills_means_hash[kill_mean.to_sym] += 1
+    end
+
+    kills_means_hash = sort_hash(kills_means_hash)
+
+    return kills_means_hash
   end
 
 end

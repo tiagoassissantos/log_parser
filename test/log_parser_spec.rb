@@ -24,11 +24,11 @@ RSpec.describe LogParser do
 
   context 'create basic structure' do
     let(:basic_structure) {
-      {"game_1": {"total_kills": 0, "players": [], "kills": {}}}
+      {"game_1": {"total_kills": 0, "players": [], "kills": {}, "kills_by_means": {}}}
     }
 
     let(:basic_structure_2) {
-      {"game_2": {"total_kills": 0, "players": [], "kills": {}}}
+      {"game_2": {"total_kills": 0, "players": [], "kills": {}, "kills_by_means": {}}}
     }
 
     it 'should return hash with basic structure' do
@@ -88,7 +88,7 @@ RSpec.describe LogParser do
 
   context 'process kills' do
     it 'should return structure with kills sumary' do
-      line = '  1:08 Kill: 3 2 6: Isgalamido killed Mocinha by MOD_ROCKET'
+      line = "  1:08 Kill: 3 2 6: Isgalamido killed Mocinha by MOD_ROCKET\n"
       data = {}
       data = @parser.create_base_structure(data, 1)
 
@@ -98,7 +98,7 @@ RSpec.describe LogParser do
     end
 
     it 'should return structure without player <world>' do
-      line = '  1:26 Kill: 1022 4 22: <world> killed Zeh by MOD_TRIGGER_HURT'
+      line = "  1:26 Kill: 1022 4 22: <world> killed Zeh by MOD_TRIGGER_HURT\n"
       data = {}
       data = @parser.create_base_structure(data, 1)
 
@@ -108,7 +108,7 @@ RSpec.describe LogParser do
     end
 
     it 'should return structure with player killed by <world> losed 1 kill score' do
-      line = '  1:26 Kill: 1022 4 22: <world> killed Zeh by MOD_TRIGGER_HURT'
+      line = "  1:26 Kill: 1022 4 22: <world> killed Zeh by MOD_TRIGGER_HURT"
       data = {}
       data = @parser.create_base_structure(data, 1)
       data[:game_1][:kills]['Zeh'] = 5
@@ -129,10 +129,20 @@ RSpec.describe LogParser do
     }
 
     it 'should sort killers by num kills' do
-      result = @parser.sort_killers data[:game_1][:kills]
+      result = @parser.sort_hash data[:game_1][:kills]
       expect(result.keys[0].to_s).to eq('Isgalamido')
       expect(result.keys[1].to_s).to eq('Dono da Bola')
       expect(result.keys[2].to_s).to eq('Zeh')
+    end
+  end
+
+  context 'kills by means' do
+    it 'should return hash with kills means and numbers' do
+      line = "  1:26 Kill: 1022 4 22: <world> killed Zeh by MOD_TRIGGER_HURT\n"
+      hash = {}
+      result = @parser.process_kill_mean hash, line
+
+      expect(result[:MOD_TRIGGER_HURT]).to eq(1)
     end
   end
 
